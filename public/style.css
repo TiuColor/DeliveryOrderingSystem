@@ -39,11 +39,11 @@ h1 {
 }
 
 main {
-    padding: 1rem 1rem 80px 1rem; /* 底部留出导航空间 */
+    padding: 1rem 1rem 80px 1rem;
 }
 
 .panel {
-    display: block; /* 由JS控制显示隐藏 */
+    display: block;
 }
 
 .card {
@@ -240,40 +240,130 @@ input, textarea, select { font-size: 16px !important; }
 .role-desc { font-size: 0.7rem; color: #888; }
 #closeModalBtn { background: #ccc; color: #333; }
 
-/* 菜品多选样式 */
+/* ===== 新增/修改：菜品多选样式（优化布局 + 自定义复选框） ===== */
 .dish-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
     background: #f9f9f9;
     border-radius: 12px;
-    padding: 12px;
-    margin-bottom: 8px;
+    padding: 10px 14px;
+    margin-bottom: 6px;
+    transition: background 0.2s;
 }
-.dish-checkbox {
+/* 左侧：复选框 + 图标 + 名称 + 价格 */
+.dish-checkbox-label {
     display: flex;
     align-items: center;
     gap: 10px;
-    flex: 2;
+    flex: 1;
+    cursor: pointer;
+    /* 使整个label可点击，但checkbox隐藏，用自定义样式 */
 }
-.dish-checkbox input { width: 20px; height: 20px; }
-.dish-emoji { font-size: 1.3rem; }
-.dish-name { font-weight: 500; flex: 1; }
-.dish-price { color: #ff6b35; font-size: 0.9rem; }
+/* 隐藏原生checkbox */
+.dish-checkbox-label input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+}
+/* 自定义复选框方块 */
+.custom-checkbox {
+    width: 22px;
+    height: 22px;
+    border: 2px solid #ccc;
+    border-radius: 6px;
+    background: white;
+    display: inline-block;
+    flex-shrink: 0;
+    transition: 0.2s;
+    position: relative;
+}
+/* 选中状态：绿色背景 + 对勾 */
+.dish-checkbox-label input[type="checkbox"]:checked + .custom-checkbox {
+    background: #27ae60;
+    border-color: #27ae60;
+}
+.dish-checkbox-label input[type="checkbox"]:checked + .custom-checkbox::after {
+    content: "✓";
+    color: white;
+    font-size: 16px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+}
+
+.dish-emoji {
+    font-size: 1.3rem;
+    flex-shrink: 0;
+}
+.dish-name {
+    font-weight: 500;
+    flex: 1;
+    white-space: nowrap;
+}
+.dish-price {
+    color: #ff6b35;
+    font-size: 0.9rem;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+
+/* 右侧：数量 */
 .dish-quantity {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
+    flex-shrink: 0;
+    margin-left: 10px;
+}
+.dish-quantity span {
+    font-size: 0.8rem;
+    color: #666;
 }
 .dish-quantity input {
     width: 50px;
-    padding: 6px;
+    padding: 4px 6px;
     border: 1px solid #ddd;
     border-radius: 8px;
     text-align: center;
+    font-size: 0.9rem;
+    background: white;
+}
+.dish-quantity input:disabled {
+    background: #f0f0f0;
+    color: #aaa;
 }
 
-/* 菜品管理样式 */
+/* 选中时整行背景轻微变色，视觉反馈 */
+.dish-item:has(input[type="checkbox"]:checked) {
+    background: #e8f5e9;
+}
+
+/* 响应式调整 */
+@media (max-width: 400px) {
+    .dish-item {
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+    .dish-checkbox-label {
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+    .dish-name {
+        white-space: normal;
+        min-width: 60px;
+    }
+    .dish-quantity {
+        margin-left: 0;
+    }
+}
+
+/* 菜品管理样式（不变） */
 .dish-manage-list {
     display: flex;
     flex-direction: column;
@@ -308,7 +398,7 @@ input, textarea, select { font-size: 16px !important; }
     gap: 8px;
 }
 
-/* ===== 新增底部导航样式 ===== */
+/* 底部导航 */
 .bottom-nav {
     position: fixed;
     bottom: 0;
