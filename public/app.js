@@ -200,8 +200,8 @@ function renderHomeContent() {
             <div class="card order-form">
                 <h3>📝 新订单</h3>
                 <input type="text" id="custName" placeholder="收货人姓名" autocomplete="off">
-                <input type="tel" id="custPhone" placeholder="联系电话（将作为账号）" autocomplete="off">
-                <textarea id="custAddress" rows="2" placeholder="详细地址" autocomplete="off"></textarea>
+                <input type="tel" id="custPhone" placeholder="联系电话（首次使用将作为账号）" autocomplete="off">
+                <textarea id="custAddress" rows="1" placeholder="详细地址" autocomplete="off" style="resize: vertical; min-height: 44px;"></textarea>
                 
                 <div id="dishList" style="margin-bottom: 16px;">
                     <label style="display: block; margin-bottom: 12px; font-weight: 500;">请选择菜品（可多选）：</label>
@@ -231,8 +231,8 @@ function renderHomeContent() {
             <div class="card order-form">
                 <h3>📝 新订单</h3>
                 <input type="text" id="custName" placeholder="收货人姓名" autocomplete="off">
-                <input type="tel" id="custPhone" placeholder="联系电话" autocomplete="off">
-                <textarea id="custAddress" rows="2" placeholder="详细地址" autocomplete="off"></textarea>
+                <input type="tel" id="custPhone" placeholder="联系电话（首次使用将作为账号）" autocomplete="off">
+                <textarea id="custAddress" rows="1" placeholder="详细地址" autocomplete="off" style="resize: vertical; min-height: 44px;"></textarea>
                 <div id="dishList" style="margin-bottom: 16px;">
                     <label style="display: block; margin-bottom: 12px; font-weight: 500;">请选择菜品（可多选）：</label>
                     <div id="dishOptionsContainer" style="display: flex; flex-direction: column; gap: 12px;"></div>
