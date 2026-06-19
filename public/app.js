@@ -22,7 +22,7 @@ const roleOptions = document.querySelectorAll('.role-option');
 const closeModalBtn = document.getElementById('closeModalBtn');
 
 // =====================================================
-// 菜品相关函数（不变）
+// 菜品相关函数
 // =====================================================
 async function loadDishes() {
     try {
@@ -34,19 +34,46 @@ async function loadDishes() {
     }
 }
 
-// 渲染用户下单界面的菜品列表（多选+数量）
-async function renderUserDishes() {
+// 渲染用户下单界面的菜品列表（多选+数量）—— 优化布局和样式
+async function renderUserDishesToContainer() {
+    const container = document.getElementById('dishOptionsContainer');
+    if (!container) return;
     const dishes = await loadDishes();
-    // 注意：此函数会被多次调用，需要确保容器存在
-    // 我们将其渲染到 homeContent 中的特定区域
-    // 由 renderHomeContent 负责调用
+    container.innerHTML = '';
+    dishes.forEach(dish => {
+        const div = document.createElement('div');
+        div.className = 'dish-item';
+        div.dataset.id = dish.id;
+        div.innerHTML = `
+            <label class="dish-checkbox-label">
+                <input type="checkbox" value="${dish.emoji} ${dish.name}" class="dish-checkbox">
+                <span class="custom-checkbox"></span>
+                <span class="dish-emoji">${dish.emoji}</span>
+                <span class="dish-name">${dish.name}</span>
+                <span class="dish-price">¥${dish.price}</span>
+            </label>
+            <div class="dish-quantity">
+                <span>数量</span>
+                <input type="number" min="1" value="1" class="qty-input" disabled>
+            </div>
+        `;
+        const checkbox = div.querySelector('.dish-checkbox');
+        const qtyInput = div.querySelector('.qty-input');
+        // 点击整个label区域可切换checkbox，但我们需要控制数量输入框的启用状态
+        // 监听checkbox变化
+        checkbox.addEventListener('change', () => {
+            qtyInput.disabled = !checkbox.checked;
+            if (!checkbox.checked) qtyInput.value = 1;
+        });
+        container.appendChild(div);
+    });
 }
 
-// 获取选中的菜品字符串
+// 获取选中的菜品字符串（保持不变）
 function getSelectedDishes() {
     const items = [];
     document.querySelectorAll('.dish-item').forEach(item => {
-        const checkbox = item.querySelector('input[type="checkbox"]');
+        const checkbox = item.querySelector('.dish-checkbox');
         if (checkbox && checkbox.checked) {
             const dishName = checkbox.value;
             const qty = item.querySelector('.qty-input').value;
@@ -56,7 +83,7 @@ function getSelectedDishes() {
     return items.join(', ');
 }
 
-// 商家渲染菜品管理
+// 商家渲染菜品管理（不变）
 async function renderMerchantDishes() {
     if (!currentUser || currentUser.role !== 'merchant') return;
     const dishes = await loadDishes();
@@ -96,8 +123,7 @@ async function renderMerchantDishes() {
                 await axios.put(`/api/dishes/${id}`, { name, price, emoji });
                 alert('保存成功');
                 await renderMerchantDishes();
-                // 更新用户点餐界面（如果当前是用户首页，但首页可能不是用户，但为了同步，我们重新渲染首页内容）
-                renderHomeContent();
+                renderHomeContent(); // 更新用户点餐界面
             } catch (err) {
                 alert('保存失败: ' + (err.response?.data?.error || err.message));
             }
@@ -164,9 +190,7 @@ function renderHomeContent() {
                 <div id="authMessage" style="margin-top: 12px; font-size: 0.8rem; color: red;"></div>
             </div>
         `;
-        // 重新绑定事件
         bindHomeEvents();
-        // 渲染菜品选项
         renderUserDishesToContainer();
         return;
     }
@@ -190,7 +214,6 @@ function renderHomeContent() {
         bindHomeEvents();
         renderUserDishesToContainer();
     } else if (role === 'merchant') {
-        // 商家首页 = 订单管理
         homeContent.innerHTML = `
             <div class="stats-badge">📊 未派送订单: <span id="undispatchedCount">0</span></div>
             <div class="card">
@@ -198,7 +221,6 @@ function renderHomeContent() {
                 <div id="merchantOrdersList" class="order-list"><div class="empty-tip">暂无订单</div></div>
             </div>
         `;
-        // 加载商家订单
         loadMerchantOrders();
     } else if (role === 'courier') {
         homeContent.innerHTML = `
@@ -210,38 +232,6 @@ function renderHomeContent() {
         `;
         loadCourierOrders();
     }
-}
-
-// 辅助：将菜品列表渲染到当前存在的 dishOptionsContainer
-async function renderUserDishesToContainer() {
-    const container = document.getElementById('dishOptionsContainer');
-    if (!container) return;
-    const dishes = await loadDishes();
-    container.innerHTML = '';
-    dishes.forEach(dish => {
-        const div = document.createElement('div');
-        div.className = 'dish-item';
-        div.dataset.id = dish.id;
-        div.innerHTML = `
-            <label class="dish-checkbox">
-                <input type="checkbox" value="${dish.emoji} ${dish.name}">
-                <span class="dish-emoji">${dish.emoji}</span>
-                <span class="dish-name">${dish.name}</span>
-                <span class="dish-price">¥${dish.price}</span>
-            </label>
-            <div class="dish-quantity">
-                <span>数量</span>
-                <input type="number" min="1" value="1" class="qty-input" disabled>
-            </div>
-        `;
-        const checkbox = div.querySelector('input[type="checkbox"]');
-        const qtyInput = div.querySelector('.qty-input');
-        checkbox.addEventListener('change', () => {
-            qtyInput.disabled = !checkbox.checked;
-            if (!checkbox.checked) qtyInput.value = 1;
-        });
-        container.appendChild(div);
-    });
 }
 
 // 绑定首页内的事件（下单、登录等）
@@ -260,7 +250,7 @@ function bindHomeEvents() {
     }
 }
 
-// 登录处理函数（与之前逻辑相同，但独立出来）
+// 登录处理函数
 async function handleLogin() {
     const phone = document.getElementById('loginPhone').value.trim();
     const password = document.getElementById('loginPassword').value;
@@ -362,7 +352,6 @@ async function handleSubmitOrder() {
             if (!user) return;
             currentUser = user;
             localStorage.setItem('user', JSON.stringify(currentUser));
-            // 重新渲染首页（用户已登录）
             afterLogin();
         } else if (chosenRole === 'merchant' || chosenRole === 'courier') {
             const inviteCode = prompt('请输入邀请码');
@@ -410,11 +399,10 @@ async function handleSubmitOrder() {
         document.getElementById('custName').value = '';
         document.getElementById('custPhone').value = '';
         document.getElementById('custAddress').value = '';
-        document.querySelectorAll('.dish-item input[type="checkbox"]').forEach(cb => {
+        document.querySelectorAll('.dish-checkbox').forEach(cb => {
             cb.checked = false;
             cb.dispatchEvent(new Event('change'));
         });
-        // 刷新订单列表（如果当前在“我的订单”标签，需刷新）
         if (currentTab === 'orders') await loadCustomerOrders();
         alert('下单成功！');
     } catch (err) {
@@ -513,7 +501,6 @@ async function loadMerchantOrders() {
     try {
         const res = await axios.get('/api/orders');
         const orders = res.data;
-        // 如果首页是商家，则渲染到 merchantOrdersList
         const container = document.getElementById('merchantOrdersList');
         if (!container) return;
         if (!orders || orders.length === 0) {
@@ -538,7 +525,6 @@ async function loadMerchantOrders() {
             document.querySelectorAll('[data-action="accept"]').forEach(btn => btn.addEventListener('click', async () => { await acceptOrder(btn.dataset.id); }));
             document.querySelectorAll('[data-action="dispatch"]').forEach(btn => btn.addEventListener('click', async () => { await dispatchOrder(btn.dataset.id); }));
         }
-        // 更新未派送数字
         const undispatched = orders ? orders.filter(o => o.status === 'dispatched').length : 0;
         const badge = document.getElementById('undispatchedCount');
         if (badge) badge.innerText = undispatched;
@@ -618,14 +604,11 @@ function renderBottomNav() {
         btn.addEventListener('click', () => {
             const tab = btn.dataset.tab;
             const panelId = btn.dataset.panel;
-            // 切换激活状态
             bottomNav.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            // 显示对应的面板，隐藏其他
             document.querySelectorAll('#mainContent > .panel').forEach(p => p.style.display = 'none');
             document.getElementById(panelId).style.display = 'block';
             currentTab = tab;
-            // 如果切换到订单/菜品管理，刷新数据
             if (tab === 'orders' && currentUser?.role === 'customer') loadCustomerOrders();
             if (tab === 'dishes' && currentUser?.role === 'merchant') renderMerchantDishes();
             if (tab === 'profile') updateProfilePanel();
@@ -633,13 +616,11 @@ function renderBottomNav() {
     });
 }
 
-// 更新“我的”面板
 function updateProfilePanel() {
     if (!currentUser) {
         profilePhone.innerText = '未登录';
         profileRole.innerText = '游客';
         profileLogoutBtn.style.display = 'none';
-        // 显示登录按钮？但我们在首页已经有点击登录，这里简单处理
         return;
     }
     profilePhone.innerText = currentUser.phone;
@@ -648,14 +629,11 @@ function updateProfilePanel() {
     profileLogoutBtn.style.display = 'block';
 }
 
-// 退出登录
 profileLogoutBtn.addEventListener('click', async () => {
     await axios.post('/api/logout');
     currentUser = null;
     localStorage.removeItem('user');
-    // 重置界面
     afterLogin();
-    // 切换到首页
     document.querySelector('#bottomNav .nav-item[data-tab="home"]')?.click();
 });
 
@@ -663,11 +641,8 @@ profileLogoutBtn.addEventListener('click', async () => {
 // 登录成功后的统一处理
 // =====================================================
 function afterLogin() {
-    // 重新渲染首页
     renderHomeContent();
-    // 重新渲染底部导航
     renderBottomNav();
-    // 如果当前是用户，且“我的订单”面板可见则刷新
     if (currentUser?.role === 'customer') {
         loadCustomerOrders();
     }
@@ -675,7 +650,6 @@ function afterLogin() {
         renderMerchantDishes();
     }
     updateProfilePanel();
-    // 默认显示首页
     document.querySelector('#bottomNav .nav-item[data-tab="home"]')?.click();
 }
 
@@ -685,7 +659,6 @@ function afterLogin() {
 async function checkAutoLogin() {
     const stored = localStorage.getItem('user');
     if (!stored) {
-        // 未登录，显示首页（未登录状态）
         renderHomeContent();
         renderBottomNav();
         updateProfilePanel();
@@ -710,7 +683,6 @@ socket.on('order-updated', () => {
         if (currentUser.role === 'customer' && currentTab === 'orders') loadCustomerOrders();
         if (currentUser.role === 'merchant') loadMerchantOrders();
         if (currentUser.role === 'courier') loadCourierOrders();
-        // 如果首页是商家/快递员，刷新首页
         if (currentTab === 'home') {
             if (currentUser.role === 'merchant') loadMerchantOrders();
             else if (currentUser.role === 'courier') loadCourierOrders();
