@@ -34,7 +34,26 @@ async function loadDishes() {
     }
 }
 
-// 渲染用户下单界面的菜品列表（多选+数量）—— 优化布局和样式
+// 更新合计（计算所有选中菜品价格*数量之和）
+function updateTotal() {
+    const items = document.querySelectorAll('.dish-item');
+    let total = 0;
+    items.forEach(item => {
+        const checkbox = item.querySelector('.dish-checkbox');
+        if (checkbox && checkbox.checked) {
+            const price = parseFloat(item.dataset.price) || 0;
+            const qtyInput = item.querySelector('.qty-input');
+            const qty = parseInt(qtyInput.value) || 1;
+            total += price * qty;
+        }
+    });
+    const totalEl = document.getElementById('dishTotal');
+    if (totalEl) {
+        totalEl.textContent = `合计：¥${total.toFixed(2)}`;
+    }
+}
+
+// 渲染用户下单界面的菜品列表（多选+数量）—— 优化布局和样式，增加合计行
 async function renderUserDishesToContainer() {
     const container = document.getElementById('dishOptionsContainer');
     if (!container) return;
@@ -44,6 +63,7 @@ async function renderUserDishesToContainer() {
         const div = document.createElement('div');
         div.className = 'dish-item';
         div.dataset.id = dish.id;
+        div.dataset.price = dish.price; // 存储价格用于计算合计
         div.innerHTML = `
             <label class="dish-checkbox-label">
                 <input type="checkbox" value="${dish.emoji} ${dish.name}" class="dish-checkbox">
@@ -59,17 +79,26 @@ async function renderUserDishesToContainer() {
         `;
         const checkbox = div.querySelector('.dish-checkbox');
         const qtyInput = div.querySelector('.qty-input');
-        // 点击整个label区域可切换checkbox，但我们需要控制数量输入框的启用状态
-        // 监听checkbox变化
+        // 监听变化以更新合计
         checkbox.addEventListener('change', () => {
             qtyInput.disabled = !checkbox.checked;
             if (!checkbox.checked) qtyInput.value = 1;
+            updateTotal();
         });
+        qtyInput.addEventListener('input', updateTotal);
         container.appendChild(div);
     });
+    // 添加合计行（紧贴菜品列表）
+    const totalDiv = document.createElement('div');
+    totalDiv.className = 'dish-total';
+    totalDiv.id = 'dishTotal';
+    totalDiv.textContent = '合计：¥0.00';
+    container.appendChild(totalDiv);
+    // 初始化合计
+    updateTotal();
 }
 
-// 获取选中的菜品字符串（保持不变）
+// 获取选中的菜品字符串（下单时使用）
 function getSelectedDishes() {
     const items = [];
     document.querySelectorAll('.dish-item').forEach(item => {

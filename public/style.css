@@ -240,7 +240,7 @@ input, textarea, select { font-size: 16px !important; }
 .role-desc { font-size: 0.7rem; color: #888; }
 #closeModalBtn { background: #ccc; color: #333; }
 
-/* ===== 新增/修改：菜品多选样式（优化布局 + 自定义复选框） ===== */
+/* ===== 菜品多选样式（优化布局 + 自定义复选框 + 合计行） ===== */
 .dish-item {
     display: flex;
     justify-content: space-between;
@@ -251,16 +251,13 @@ input, textarea, select { font-size: 16px !important; }
     margin-bottom: 6px;
     transition: background 0.2s;
 }
-/* 左侧：复选框 + 图标 + 名称 + 价格 */
 .dish-checkbox-label {
     display: flex;
     align-items: center;
     gap: 10px;
     flex: 1;
     cursor: pointer;
-    /* 使整个label可点击，但checkbox隐藏，用自定义样式 */
 }
-/* 隐藏原生checkbox */
 .dish-checkbox-label input[type="checkbox"] {
     position: absolute;
     opacity: 0;
@@ -268,7 +265,6 @@ input, textarea, select { font-size: 16px !important; }
     height: 0;
     pointer-events: none;
 }
-/* 自定义复选框方块 */
 .custom-checkbox {
     width: 22px;
     height: 22px;
@@ -280,7 +276,6 @@ input, textarea, select { font-size: 16px !important; }
     transition: 0.2s;
     position: relative;
 }
-/* 选中状态：绿色背景 + 对勾 */
 .dish-checkbox-label input[type="checkbox"]:checked + .custom-checkbox {
     background: #27ae60;
     border-color: #27ae60;
@@ -313,7 +308,6 @@ input, textarea, select { font-size: 16px !important; }
     flex-shrink: 0;
 }
 
-/* 右侧：数量 */
 .dish-quantity {
     display: flex;
     align-items: center;
@@ -339,9 +333,20 @@ input, textarea, select { font-size: 16px !important; }
     color: #aaa;
 }
 
-/* 选中时整行背景轻微变色，视觉反馈 */
+/* 选中时整行背景轻微变色 */
 .dish-item:has(input[type="checkbox"]:checked) {
     background: #e8f5e9;
+}
+
+/* 合计行样式（右对齐，橙色，与淡绿色区分） */
+.dish-total {
+    text-align: right;
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: #e67e22;
+    padding: 8px 14px 0 0;
+    margin-top: 4px;
+    border-top: 1px dashed #ddd;
 }
 
 /* 响应式调整 */
