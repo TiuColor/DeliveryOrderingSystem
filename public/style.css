@@ -1,28 +1,33 @@
-/* public/style.css */
+/* public/style.css - 移动端优化版 */
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    -webkit-tap-highlight-color: transparent;
+    -webkit-tap-highlight-color: transparent; /* 移除移动端点击灰色背景 */
 }
 
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     background: #f5f5f5;
     color: #333;
-    padding-bottom: 30px;
+    font-size: 16px; /* 基准字体，便于使用rem */
+    line-height: 1.4;
 }
 
+/* 容器 - 全宽，最大宽度限制，居中 */
 .container {
     max-width: 600px;
     margin: 0 auto;
     background: #f5f5f5;
     min-height: 100vh;
+    width: 100%;
+    padding: 0;
 }
 
+/* 头部 */
 header {
     background: white;
-    padding: 16px 20px;
+    padding: 1rem 1.2rem;
     box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     position: sticky;
     top: 0;
@@ -32,15 +37,16 @@ header {
 h1 {
     font-size: 1.6rem;
     font-weight: 600;
-    margin-bottom: 12px;
+    margin-bottom: 0.75rem;
     color: #ff6b35;
 }
 
-.role-tabs {
+/* 角色切换/用户信息栏 */
+.role-tabs, .user-info-bar {
     display: flex;
-    gap: 12px;
+    gap: 0.75rem;
     background: #f0f0f0;
-    padding: 4px;
+    padding: 0.25rem;
     border-radius: 40px;
 }
 
@@ -48,7 +54,7 @@ h1 {
     flex: 1;
     border: none;
     background: transparent;
-    padding: 8px 0;
+    padding: 0.6rem 0;
     border-radius: 30px;
     font-size: 0.9rem;
     font-weight: 500;
@@ -63,9 +69,10 @@ h1 {
     box-shadow: 0 2px 6px rgba(255,107,53,0.3);
 }
 
+/* 面板切换 */
 .panel {
     display: none;
-    padding: 16px;
+    padding: 1rem;
     animation: fadeIn 0.2s ease;
 }
 
@@ -78,51 +85,64 @@ h1 {
     to { opacity: 1; transform: translateY(0);}
 }
 
+/* 卡片 */
 .card {
     background: white;
-    border-radius: 20px;
-    padding: 20px;
-    margin-bottom: 20px;
+    border-radius: 1.25rem;
+    padding: 1.2rem;
+    margin-bottom: 1.2rem;
     box-shadow: 0 2px 12px rgba(0,0,0,0.08);
 }
 
 .card h3 {
     font-size: 1.2rem;
-    margin-bottom: 16px;
+    margin-bottom: 1rem;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 0.5rem;
     border-left: 4px solid #ff6b35;
-    padding-left: 12px;
+    padding-left: 0.75rem;
 }
 
-.order-form input, .order-form textarea {
+/* 表单元素 - 移动端友好 */
+.order-form input, 
+.order-form textarea,
+#loginForm input,
+#registerForm input,
+#registerForm select {
     width: 100%;
-    padding: 12px 14px;
-    margin-bottom: 12px;
+    padding: 0.8rem 1rem;
+    margin-bottom: 1rem;
     border: 1px solid #e0e0e0;
-    border-radius: 14px;
-    font-size: 0.95rem;
-    transition: 0.2s;
+    border-radius: 0.875rem;
+    font-size: 1rem;
     background: #fafafa;
     font-family: inherit;
+    transition: 0.2s;
+    -webkit-appearance: none; /* 移除iOS默认样式 */
 }
 
-.order-form input:focus, .order-form textarea:focus {
+.order-form input:focus, 
+.order-form textarea:focus,
+#loginForm input:focus,
+#registerForm input:focus {
     outline: none;
     border-color: #ff6b35;
     background: white;
 }
 
+/* 按钮 - 触摸区域足够大 */
 .btn {
     border: none;
-    padding: 12px 20px;
-    border-radius: 40px;
+    padding: 0.8rem 1.2rem;
+    border-radius: 2rem;
     font-weight: 600;
-    font-size: 0.95rem;
+    font-size: 1rem;
     cursor: pointer;
     transition: all 0.2s;
     width: 100%;
+    text-align: center;
+    display: inline-block;
 }
 
 .btn.primary {
@@ -139,7 +159,6 @@ h1 {
 .btn.secondary {
     background: #2c3e66;
     color: white;
-    margin-top: 8px;
 }
 
 .btn.success {
@@ -153,21 +172,22 @@ h1 {
 }
 
 .btn.small {
-    padding: 8px 14px;
-    font-size: 0.8rem;
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
     width: auto;
 }
 
+/* 订单列表 */
 .order-list {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 1rem;
 }
 
 .order-item {
     background: #fef9f5;
-    border-radius: 18px;
-    padding: 16px;
+    border-radius: 1.125rem;
+    padding: 1rem;
     border: 1px solid #ffede3;
     transition: 0.1s;
 }
@@ -176,24 +196,24 @@ h1 {
     display: flex;
     justify-content: space-between;
     align-items: baseline;
-    margin-bottom: 12px;
+    margin-bottom: 0.75rem;
     flex-wrap: wrap;
-    gap: 6px;
+    gap: 0.5rem;
 }
 
 .order-id {
     font-weight: 600;
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     color: #888;
     background: #f0f0f0;
-    padding: 2px 10px;
-    border-radius: 20px;
+    padding: 0.2rem 0.6rem;
+    border-radius: 1rem;
 }
 
 .order-status {
     font-size: 0.7rem;
-    padding: 4px 10px;
-    border-radius: 30px;
+    padding: 0.25rem 0.7rem;
+    border-radius: 1.5rem;
     font-weight: 500;
 }
 
@@ -205,7 +225,7 @@ h1 {
 .order-detail {
     font-size: 0.85rem;
     color: #444;
-    margin: 8px 0;
+    margin: 0.5rem 0;
     line-height: 1.4;
     word-break: break-word;
 }
@@ -217,21 +237,22 @@ h1 {
 .divider {
     height: 1px;
     background: #ffded0;
-    margin: 12px 0;
+    margin: 0.75rem 0;
 }
 
 .order-actions {
     display: flex;
-    gap: 10px;
-    margin-top: 12px;
+    gap: 0.75rem;
+    margin-top: 0.75rem;
     flex-wrap: wrap;
 }
 
+/* 统计徽章 */
 .stats-badge {
     background: white;
-    border-radius: 40px;
-    padding: 10px 18px;
-    margin-bottom: 16px;
+    border-radius: 2rem;
+    padding: 0.6rem 1rem;
+    margin-bottom: 1rem;
     display: inline-block;
     font-weight: 500;
     font-size: 0.85rem;
@@ -239,28 +260,192 @@ h1 {
     color: #ff6b35;
 }
 
+/* 快递员地址卡片 */
+.courier-address {
+    background: #fff7e6;
+    padding: 0.6rem 0.8rem;
+    border-radius: 0.875rem;
+    border-left: 3px solid #ff6b35;
+    margin: 0.5rem 0;
+    font-size: 0.85rem;
+}
+
+/* 空状态提示 */
 .empty-tip {
     text-align: center;
     color: #aaa;
-    padding: 32px 16px;
+    padding: 2rem 1rem;
     font-size: 0.9rem;
 }
 
-/* 快递员地址突出 */
-.courier-address {
-    background: #fff7e6;
-    padding: 8px 12px;
-    border-radius: 14px;
-    border-left: 3px solid #ff6b35;
-    margin: 8px 0;
+/* 登录/注册切换标签 */
+.tabs {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1.2rem;
+}
+.tabs .btn {
+    flex: 1;
+    background: #f0f0f0;
+    color: #666;
+}
+.tabs .btn.active {
+    background: #ff6b35;
+    color: white;
 }
 
-@media (max-width: 480px) {
+/* 保持按钮最小触摸尺寸 */
+button, .btn, [role="button"] {
+    min-height: 44px;
+}
+
+/* 针对极小屏幕（iPhone SE等）优化 */
+@media (max-width: 400px) {
+    body {
+        font-size: 14px;
+    }
     .card {
-        padding: 16px;
+        padding: 1rem;
     }
-    .order-actions .btn.small {
-        font-size: 0.7rem;
-        padding: 6px 10px;
+    .order-item {
+        padding: 0.8rem;
     }
+    .btn.small {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.75rem;
+    }
+    h1 {
+        font-size: 1.4rem;
+    }
+}
+
+/* 横屏适配 */
+@media (orientation: landscape) {
+    .container {
+        max-width: 800px;
+    }
+    .order-actions {
+        flex-direction: row;
+    }
+}
+
+/* 触摸反馈优化 */
+.btn:active, .role-btn:active {
+    opacity: 0.7;
+    transform: scale(0.98);
+}
+
+/* 避免输入框放大（iOS） */
+input, textarea, select {
+    font-size: 16px !important;
+}
+
+/* 二维码扫码后页面跳转，确保背景填充 */
+html, body {
+    height: 100%;
+    width: 100%;
+}
+
+/* 菜品多选样式 */
+.dish-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f9f9f9;
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 8px;
+}
+.dish-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 2;
+}
+.dish-checkbox input {
+    width: 20px;
+    height: 20px;
+}
+.dish-emoji {
+    font-size: 1.3rem;
+}
+.dish-name {
+    font-weight: 500;
+    flex: 1;
+}
+.dish-price {
+    color: #ff6b35;
+    font-size: 0.9rem;
+}
+.dish-quantity {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.dish-quantity input {
+    width: 50px;
+    padding: 6px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    text-align: center;
+}
+
+/* 模态框样式 */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+.modal-content {
+    background: white;
+    border-radius: 24px;
+    padding: 24px;
+    width: 80%;
+    max-width: 320px;
+    text-align: center;
+}
+.modal-content h3 {
+    margin-bottom: 20px;
+}
+.role-options {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 24px;
+}
+.role-option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: #f5f5f5;
+    border-radius: 16px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+.role-option:hover {
+    background: #ffe8df;
+}
+.role-icon {
+    font-size: 1.8rem;
+}
+.role-name {
+    font-weight: 600;
+    flex: 1;
+    text-align: left;
+}
+.role-desc {
+    font-size: 0.7rem;
+    color: #888;
+}
+#closeModalBtn {
+    background: #ccc;
+    color: #333;
 }
