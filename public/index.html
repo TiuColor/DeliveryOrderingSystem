@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
-    <title>同城速配</title>
+    <title>老刘家晚风饭包</title>
     <link rel="stylesheet" href="/style.css">
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
@@ -12,14 +12,13 @@
 
     <!-- 顶部标题 -->
     <header>
-        <h1>🏍️ 同城速配</h1>
+        <h1>🍱 老刘家晚风饭包</h1>
     </header>
 
     <!-- 主内容区域 -->
     <main id="mainContent">
         <!-- ========== 首页面板 ========== -->
         <div id="panelHome" class="panel active">
-            <!-- 内容由JS根据角色动态渲染，但保留结构容器 -->
             <div id="homeContent"></div>
         </div>
 
@@ -38,21 +37,18 @@
             <div class="card">
                 <h3>🍽️ 菜品管理</h3>
                 <div id="dishManagementList" class="dish-manage-list"></div>
-                <button id="addDishBtn" class="btn small primary" style="margin-top: 12px;">+ 添加菜品</button>
+                <!-- 添加按钮移到这里 -->
+                <button id="addDishBtn" class="btn primary" style="margin-top: 16px;">+ 添加菜品</button>
+                <!-- 统一的保存按钮放在最下方 -->
+                <button id="saveAllDishesBtn" class="btn primary" style="margin-top: 12px;">保存所有修改</button>
             </div>
         </div>
 
         <!-- ========== 我的面板（所有角色） ========== -->
         <div id="panelProfile" class="panel" style="display:none;">
             <div class="card">
-                <h3>👤 我的信息</h3>
-                <div id="profileInfo">
-                    <p><strong>手机号：</strong><span id="profilePhone">未登录</span></p>
-                    <p><strong>角色：</strong><span id="profileRole">游客</span></p>
-                </div>
-                <div id="profileActions">
-                    <button id="profileLogoutBtn" class="btn secondary" style="margin-top:12px;">退出登录</button>
-                </div>
+                <h3>👤 我的</h3>
+                <div id="profileContent"></div>
             </div>
         </div>
     </main>
@@ -62,7 +58,7 @@
         <!-- 由JS动态生成 -->
     </nav>
 
-    <!-- 身份选择模态框（保持不变） -->
+    <!-- 身份选择模态框 -->
     <div id="roleModal" class="modal" style="display:none;">
         <div class="modal-content">
             <h3>选择您的身份</h3>

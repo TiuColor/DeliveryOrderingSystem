@@ -20,8 +20,17 @@ app.use(session({
 
 const db = new sqlite3.Database('./orders.db');
 
+// 密码复杂度校验：至少包含数字、大写、小写中的两种，且长度>=6
+function isPasswordValid(password) {
+  if (password.length < 6) return false;
+  let hasDigit = /[0-9]/.test(password);
+  let hasUpper = /[A-Z]/.test(password);
+  let hasLower = /[a-z]/.test(password);
+  let count = (hasDigit ? 1 : 0) + (hasUpper ? 1 : 0) + (hasLower ? 1 : 0);
+  return count >= 2;
+}
+
 db.serialize(() => {
-  // 订单表
   db.run(`
     CREATE TABLE IF NOT EXISTS orders (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -36,7 +45,6 @@ db.serialize(() => {
     )
   `);
   
-  // 用户表
   db.run(`
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -46,7 +54,6 @@ db.serialize(() => {
     )
   `);
   
-  // 菜品表
   db.run(`
     CREATE TABLE IF NOT EXISTS dishes (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -57,7 +64,6 @@ db.serialize(() => {
     )
   `);
 
-  // 预置演示账号
   const demoUsers = [
     { phone: '13800000001', password: '123456', role: 'merchant' },
     { phone: '13800000002', password: '123456', role: 'courier' }
@@ -71,7 +77,6 @@ db.serialize(() => {
     });
   });
 
-  // 初始化默认菜品（如果表为空）
   db.get(`SELECT COUNT(*) as count FROM dishes`, (err, row) => {
     if (row.count === 0) {
       const defaultDishes = [
@@ -87,7 +92,6 @@ db.serialize(() => {
   });
 });
 
-// 辅助中间件
 function requireLogin(req, res, next) {
   if (!req.session.user) return res.status(401).json({ error: '请先登录' });
   next();
@@ -114,6 +118,9 @@ app.post('/api/check-phone', (req, res) => {
 app.post('/api/register', async (req, res) => {
   const { phone, password, role = 'customer' } = req.body;
   if (!phone || !password) return res.status(400).json({ error: '手机号和密码不能为空' });
+  if (!isPasswordValid(password)) {
+    return res.status(400).json({ error: '密码至少6位，必须包含数字、大小写字母中的至少两种' });
+  }
   if (!['customer', 'merchant', 'courier'].includes(role)) {
     return res.status(400).json({ error: '无效的角色' });
   }
@@ -154,7 +161,25 @@ app.get('/api/me', (req, res) => {
   res.json(req.session.user);
 });
 
-// ========== 菜品管理 API（公开获取，商家管理）==========
+// ========== 修改密码 API ==========
+app.post('/api/change-password', requireLogin, async (req, res) => {
+  const { newPassword } = req.body;
+  const userId = req.session.user.id;
+  if (!isPasswordValid(newPassword)) {
+    return res.status(400).json({ error: '密码至少6位，必须包含数字、大小写字母中的至少两种' });
+  }
+  try {
+    const hashed = await bcrypt.hash(newPassword, 10);
+    db.run(`UPDATE users SET password = ? WHERE id = ?`, [hashed, userId], function(err) {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json({ success: true, newPassword });
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ========== 菜品管理 API ==========
 app.get('/api/dishes', (req, res) => {
   db.all(`SELECT * FROM dishes ORDER BY sort_order`, (err, rows) => {
     if (err) return res.status(500).json({ error: err.message });

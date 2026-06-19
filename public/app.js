@@ -1,8 +1,8 @@
 // =====================================================
 // 全局状态
 // =====================================================
-let currentUser = null;          // { id, phone, role }
-let currentTab = 'home';         // 当前激活的标签名
+let currentUser = null;
+let currentTab = 'home';
 const socket = io();
 
 // DOM 引用
@@ -12,9 +12,7 @@ const panelOrders = document.getElementById('panelOrders');
 const panelDishes = document.getElementById('panelDishes');
 const panelProfile = document.getElementById('panelProfile');
 const bottomNav = document.getElementById('bottomNav');
-const profilePhone = document.getElementById('profilePhone');
-const profileRole = document.getElementById('profileRole');
-const profileLogoutBtn = document.getElementById('profileLogoutBtn');
+const profileContent = document.getElementById('profileContent');
 
 // 模态框
 const modal = document.getElementById('roleModal');
@@ -34,16 +32,15 @@ async function loadDishes() {
     }
 }
 
-// 更新合计（计算所有选中菜品价格*数量之和）
+// 更新合计
 function updateTotal() {
     const items = document.querySelectorAll('.dish-item');
     let total = 0;
     items.forEach(item => {
-        const checkbox = item.querySelector('.dish-checkbox');
-        if (checkbox && checkbox.checked) {
+        const qtySpan = item.querySelector('.dish-qty-num');
+        if (qtySpan) {
+            const qty = parseInt(qtySpan.textContent) || 0;
             const price = parseFloat(item.dataset.price) || 0;
-            const qtyInput = item.querySelector('.qty-input');
-            const qty = parseInt(qtyInput.value) || 1;
             total += price * qty;
         }
     });
@@ -53,7 +50,7 @@ function updateTotal() {
     }
 }
 
-// 渲染用户下单界面的菜品列表（多选+数量）—— 优化布局和样式，增加合计行
+// 渲染菜品列表（加减按钮风格，无复选框）
 async function renderUserDishesToContainer() {
     const container = document.getElementById('dishOptionsContainer');
     if (!container) return;
@@ -63,102 +60,108 @@ async function renderUserDishesToContainer() {
         const div = document.createElement('div');
         div.className = 'dish-item';
         div.dataset.id = dish.id;
-        div.dataset.price = dish.price; // 存储价格用于计算合计
+        div.dataset.price = dish.price;
         div.innerHTML = `
-            <label class="dish-checkbox-label">
-                <input type="checkbox" value="${dish.emoji} ${dish.name}" class="dish-checkbox">
-                <span class="custom-checkbox"></span>
+            <div class="dish-info">
                 <span class="dish-emoji">${dish.emoji}</span>
                 <span class="dish-name">${dish.name}</span>
                 <span class="dish-price">¥${dish.price}</span>
-            </label>
-            <div class="dish-quantity">
-                <span>数量</span>
-                <input type="number" min="1" value="1" class="qty-input" disabled>
+            </div>
+            <div class="dish-control">
+                <button class="dish-btn dish-minus" style="display:none;">−</button>
+                <span class="dish-qty-num" style="display:none;">0</span>
+                <button class="dish-btn dish-plus">+</button>
             </div>
         `;
-        const checkbox = div.querySelector('.dish-checkbox');
-        const qtyInput = div.querySelector('.qty-input');
-        // 监听变化以更新合计
-        checkbox.addEventListener('change', () => {
-            qtyInput.disabled = !checkbox.checked;
-            if (!checkbox.checked) qtyInput.value = 1;
+
+        const minusBtn = div.querySelector('.dish-minus');
+        const qtySpan = div.querySelector('.dish-qty-num');
+        const plusBtn = div.querySelector('.dish-plus');
+        let quantity = 0;
+
+        const updateDisplay = () => {
+            if (quantity === 0) {
+                minusBtn.style.display = 'none';
+                qtySpan.style.display = 'none';
+                plusBtn.textContent = '+';
+            } else {
+                minusBtn.style.display = 'inline-block';
+                qtySpan.style.display = 'inline-block';
+                qtySpan.textContent = quantity;
+                plusBtn.textContent = '+';
+            }
             updateTotal();
+        };
+
+        plusBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            quantity += 1;
+            updateDisplay();
         });
-        qtyInput.addEventListener('input', updateTotal);
+        minusBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (quantity > 0) {
+                quantity -= 1;
+                updateDisplay();
+            }
+        });
+
         container.appendChild(div);
     });
-    // 添加合计行（紧贴菜品列表）
+    // 合计行
     const totalDiv = document.createElement('div');
     totalDiv.className = 'dish-total';
     totalDiv.id = 'dishTotal';
     totalDiv.textContent = '合计：¥0.00';
     container.appendChild(totalDiv);
-    // 初始化合计
     updateTotal();
 }
 
-// 获取选中的菜品字符串（下单时使用）
+// 获取选中的菜品字符串
 function getSelectedDishes() {
     const items = [];
     document.querySelectorAll('.dish-item').forEach(item => {
-        const checkbox = item.querySelector('.dish-checkbox');
-        if (checkbox && checkbox.checked) {
-            const dishName = checkbox.value;
-            const qty = item.querySelector('.qty-input').value;
-            items.push(`${dishName} x${qty}`);
+        const qtySpan = item.querySelector('.dish-qty-num');
+        if (qtySpan) {
+            const qty = parseInt(qtySpan.textContent) || 0;
+            if (qty > 0) {
+                const dishName = item.querySelector('.dish-name').textContent;
+                const emoji = item.querySelector('.dish-emoji').textContent;
+                items.push(`${emoji} ${dishName} x${qty}`);
+            }
         }
     });
     return items.join(', ');
 }
 
-// 商家渲染菜品管理（不变）
+// 商家渲染菜品管理（行内编辑，添加和保存逻辑修改）
 async function renderMerchantDishes() {
     if (!currentUser || currentUser.role !== 'merchant') return;
     const dishes = await loadDishes();
     const container = document.getElementById('dishManagementList');
     if (!container) return;
+    
+    // 构建菜品编辑行
+    let html = '';
     if (dishes.length === 0) {
-        container.innerHTML = '<div class="empty-tip">暂无菜品，请添加</div>';
-        return;
+        html = '<div class="empty-tip">暂无菜品，请点击下方添加</div>';
+    } else {
+        html = dishes.map(dish => `
+            <div class="dish-manage-item" data-id="${dish.id}">
+                <div class="dish-manage-fields">
+                    <input type="text" class="dish-name-input" value="${escapeHtml(dish.name)}" placeholder="菜名">
+                    <input type="number" class="dish-price-input" value="${dish.price}" placeholder="价格">
+                    <input type="text" class="dish-emoji-input" value="${dish.emoji}" placeholder="emoji" maxlength="2">
+                </div>
+                <div class="dish-manage-actions">
+                    <button class="btn small delete-dish-btn" style="background:#e74c3c;">删除</button>
+                </div>
+            </div>
+        `).join('');
     }
-    const html = dishes.map(dish => `
-        <div class="dish-manage-item" data-id="${dish.id}">
-            <div class="dish-manage-fields">
-                <input type="text" class="dish-name-input" value="${escapeHtml(dish.name)}" placeholder="菜名">
-                <input type="number" class="dish-price-input" value="${dish.price}" placeholder="价格">
-                <input type="text" class="dish-emoji-input" value="${dish.emoji}" placeholder="emoji" maxlength="2">
-            </div>
-            <div class="dish-manage-actions">
-                <button class="btn small save-dish-btn">保存</button>
-                <button class="btn small delete-dish-btn" style="background:#e74c3c;">删除</button>
-            </div>
-        </div>
-    `).join('');
     container.innerHTML = html;
     
-    document.querySelectorAll('.save-dish-btn').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-            const item = btn.closest('.dish-manage-item');
-            const id = item.dataset.id;
-            const name = item.querySelector('.dish-name-input').value.trim();
-            const price = parseInt(item.querySelector('.dish-price-input').value);
-            const emoji = item.querySelector('.dish-emoji-input').value.trim() || '🍽️';
-            if (!name || isNaN(price)) {
-                alert('请填写有效的菜名和价格');
-                return;
-            }
-            try {
-                await axios.put(`/api/dishes/${id}`, { name, price, emoji });
-                alert('保存成功');
-                await renderMerchantDishes();
-                renderHomeContent(); // 更新用户点餐界面
-            } catch (err) {
-                alert('保存失败: ' + (err.response?.data?.error || err.message));
-            }
-        });
-    });
-    
+    // 绑定删除事件（每个行内删除）
     document.querySelectorAll('.delete-dish-btn').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             if (!confirm('确定删除此菜品吗？')) return;
@@ -175,42 +178,145 @@ async function renderMerchantDishes() {
     });
 }
 
-document.getElementById('addDishBtn')?.addEventListener('click', async () => {
-    const name = prompt('请输入新菜品名称');
-    if (!name) return;
-    const price = parseInt(prompt('请输入价格（数字）', '0'));
-    if (isNaN(price)) return;
-    const emoji = prompt('请输入菜品图标（一个emoji，默认🍽️）', '🍽️');
+// 统一保存所有菜品修改
+async function saveAllDishes() {
+    const items = document.querySelectorAll('.dish-manage-item');
+    const updates = [];
+    items.forEach(item => {
+        const id = item.dataset.id;
+        const name = item.querySelector('.dish-name-input').value.trim();
+        const price = parseInt(item.querySelector('.dish-price-input').value);
+        const emoji = item.querySelector('.dish-emoji-input').value.trim() || '🍽️';
+        if (name && !isNaN(price)) {
+            updates.push({ id, name, price, emoji });
+        }
+    });
+    if (updates.length === 0) {
+        alert('没有有效的菜品数据可保存');
+        return;
+    }
     try {
-        await axios.post('/api/dishes', { name, price, emoji: emoji || '🍽️' });
+        // 逐个更新
+        for (let dish of updates) {
+            await axios.put(`/api/dishes/${dish.id}`, { name: dish.name, price: dish.price, emoji: dish.emoji });
+        }
+        alert('所有菜品保存成功');
         await renderMerchantDishes();
-        renderHomeContent();
+        renderHomeContent(); // 更新用户点餐界面
     } catch (err) {
-        alert('添加失败: ' + (err.response?.data?.error || err.message));
+        alert('保存失败: ' + (err.response?.data?.error || err.message));
+    }
+}
+
+// 添加新菜品（直接新增一行）
+async function addNewDishRow() {
+    const container = document.getElementById('dishManagementList');
+    if (!container) return;
+    // 创建一个临时菜品对象（id为临时，保存时后端会创建）
+    const newId = 'new_' + Date.now(); // 临时id
+    const newRow = document.createElement('div');
+    newRow.className = 'dish-manage-item';
+    newRow.dataset.id = newId;
+    newRow.innerHTML = `
+        <div class="dish-manage-fields">
+            <input type="text" class="dish-name-input" placeholder="新菜名" value="">
+            <input type="number" class="dish-price-input" placeholder="价格" value="">
+            <input type="text" class="dish-emoji-input" placeholder="emoji" value="🍽️" maxlength="2">
+        </div>
+        <div class="dish-manage-actions">
+            <button class="btn small delete-dish-btn" style="background:#e74c3c;">删除</button>
+        </div>
+    `;
+    // 移除空提示
+    const emptyTip = container.querySelector('.empty-tip');
+    if (emptyTip) emptyTip.remove();
+    container.appendChild(newRow);
+    // 绑定删除事件
+    const deleteBtn = newRow.querySelector('.delete-dish-btn');
+    deleteBtn.addEventListener('click', async (e) => {
+        // 如果是临时行，直接移除
+        if (newRow.dataset.id.startsWith('new_')) {
+            newRow.remove();
+            // 如果容器为空，显示空提示
+            if (container.children.length === 0) {
+                container.innerHTML = '<div class="empty-tip">暂无菜品，请点击下方添加</div>';
+            }
+            return;
+        }
+        // 否则调用删除API
+        if (!confirm('确定删除此菜品吗？')) return;
+        const id = newRow.dataset.id;
+        try {
+            await axios.delete(`/api/dishes/${id}`);
+            alert('删除成功');
+            await renderMerchantDishes();
+            renderHomeContent();
+        } catch (err) {
+            alert('删除失败: ' + (err.response?.data?.error || err.message));
+        }
+    });
+    // 聚焦到第一个输入框
+    newRow.querySelector('.dish-name-input').focus();
+}
+
+// 事件绑定：保存所有按钮和添加按钮
+document.addEventListener('DOMContentLoaded', () => {
+    // 添加菜品按钮
+    const addBtn = document.getElementById('addDishBtn');
+    if (addBtn) {
+        addBtn.removeEventListener('click', addNewDishRow);
+        addBtn.addEventListener('click', addNewDishRow);
+    }
+    // 保存所有按钮
+    const saveBtn = document.getElementById('saveAllDishesBtn');
+    if (saveBtn) {
+        saveBtn.removeEventListener('click', saveAllDishes);
+        saveBtn.addEventListener('click', saveAllDishes);
     }
 });
 
+// 因为之前已经绑定了，但页面加载时可能已存在，所以在函数外部重新绑定，但为了保险，在afterLogin和切换商家面板时也重新绑定。
+// 我们在 renderMerchantDishes 之后重新绑定一次，但注意不要重复绑定，使用一次性绑定。
+// 我们可以在第一次渲染后绑定，但最好在每次商家面板激活时绑定。
+
 // =====================================================
-// 核心：渲染首页内容（根据当前角色）
+// 首页渲染（不含登录/注册）
 // =====================================================
 function renderHomeContent() {
-    if (!currentUser) {
-        // 未登录：显示点餐表单 + 登录区域
-        homeContent.innerHTML = `
-            <div class="card order-form">
-                <h3>📝 新订单</h3>
-                <input type="text" id="custName" placeholder="收货人姓名" autocomplete="off">
-                <input type="tel" id="custPhone" placeholder="联系电话（首次使用将作为账号）" autocomplete="off">
-                <textarea id="custAddress" rows="1" placeholder="详细地址" autocomplete="off" style="resize: vertical; min-height: 44px;"></textarea>
-                
-                <div id="dishList" style="margin-bottom: 16px;">
-                    <label style="display: block; margin-bottom: 12px; font-weight: 500;">请选择菜品（可多选）：</label>
-                    <div id="dishOptionsContainer" style="display: flex; flex-direction: column; gap: 12px;"></div>
-                </div>
-                <button id="submitOrderBtn" class="btn primary">✅ 立即下单</button>
+    homeContent.innerHTML = `
+        <div class="card order-form">
+            <h3>📝 新订单</h3>
+            <input type="text" id="custName" placeholder="收货人姓名" autocomplete="off">
+            <input type="tel" id="custPhone" placeholder="联系电话（首次使用将作为账号）" autocomplete="off">
+            <textarea id="custAddress" rows="1" placeholder="详细地址" autocomplete="off" style="resize: vertical; min-height: 44px;"></textarea>
+            <div id="dishList" style="margin-bottom: 16px;">
+                <label style="display: block; margin-bottom: 12px; font-weight: 500;">请选择菜品（可多选）：</label>
+                <div id="dishOptionsContainer" style="display: flex; flex-direction: column; gap: 12px;"></div>
             </div>
-            <div id="authArea" class="card">
-                <h3>🔐 登录/注册</h3>
+            <button id="submitOrderBtn" class="btn primary">✅ 立即下单</button>
+        </div>
+    `;
+    bindHomeEvents();
+    renderUserDishesToContainer();
+}
+
+function bindHomeEvents() {
+    const submitBtn = document.getElementById('submitOrderBtn');
+    if (submitBtn) {
+        submitBtn.removeEventListener('click', handleSubmitOrder);
+        submitBtn.addEventListener('click', handleSubmitOrder);
+    }
+}
+
+// =====================================================
+// 我的面板渲染（含登录/注册、修改密码入口）
+// =====================================================
+function renderProfilePanel(showPwd = false) {
+    if (!currentUser) {
+        // 未登录：显示登录/注册表单
+        profileContent.innerHTML = `
+            <div id="authArea">
+                <h4>🔐 登录/注册</h4>
                 <div id="loginForm">
                     <input type="tel" id="loginPhone" placeholder="手机号" autocomplete="off">
                     <input type="password" id="loginPassword" placeholder="密码">
@@ -219,67 +325,98 @@ function renderHomeContent() {
                 <div id="authMessage" style="margin-top: 12px; font-size: 0.8rem; color: red;"></div>
             </div>
         `;
-        bindHomeEvents();
-        renderUserDishesToContainer();
+        const loginBtn = document.getElementById('doLoginBtn');
+        if (loginBtn) {
+            loginBtn.removeEventListener('click', handleLogin);
+            loginBtn.addEventListener('click', handleLogin);
+        }
         return;
     }
 
-    // 已登录：根据角色显示不同首页
-    const role = currentUser.role;
-    if (role === 'customer') {
-        homeContent.innerHTML = `
-            <div class="card order-form">
-                <h3>📝 新订单</h3>
-                <input type="text" id="custName" placeholder="收货人姓名" autocomplete="off">
-                <input type="tel" id="custPhone" placeholder="联系电话（首次使用将作为账号）" autocomplete="off">
-                <textarea id="custAddress" rows="1" placeholder="详细地址" autocomplete="off" style="resize: vertical; min-height: 44px;"></textarea>
-                <div id="dishList" style="margin-bottom: 16px;">
-                    <label style="display: block; margin-bottom: 12px; font-weight: 500;">请选择菜品（可多选）：</label>
-                    <div id="dishOptionsContainer" style="display: flex; flex-direction: column; gap: 12px;"></div>
-                </div>
-                <button id="submitOrderBtn" class="btn primary">✅ 立即下单</button>
+    // 已登录：显示用户信息
+    const roleMap = { customer: '普通用户', merchant: '商家', courier: '快递员' };
+    
+    if (showPwd) {
+        // 显示修改密码详情页面
+        profileContent.innerHTML = `
+            <div id="profileInfoCompact">
+                <p><strong>手机号：</strong>${escapeHtml(currentUser.phone)}</p>
+                <p><strong>角色：</strong>${roleMap[currentUser.role] || currentUser.role}</p>
             </div>
-        `;
-        bindHomeEvents();
-        renderUserDishesToContainer();
-    } else if (role === 'merchant') {
-        homeContent.innerHTML = `
-            <div class="stats-badge">📊 未派送订单: <span id="undispatchedCount">0</span></div>
-            <div class="card">
-                <h3>🏪 所有订单</h3>
-                <div id="merchantOrdersList" class="order-list"><div class="empty-tip">暂无订单</div></div>
+            <div id="changePasswordArea" style="margin-top: 16px; border-top: 1px solid #eee; padding-top: 16px;">
+                <h4>🔑 修改密码</h4>
+                <p style="font-size: 0.8rem; color: #888;">新密码需包含数字、大小写字母中的至少两种，长度≥6位</p>
+                <input type="password" id="newPasswordInput" placeholder="新密码" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ddd; margin-bottom:8px;">
+                <input type="password" id="confirmPasswordInput" placeholder="确认新密码" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ddd; margin-bottom:8px;">
+                <button id="changePasswordBtn" class="btn primary" style="margin-top:4px;">确认修改</button>
+                <div id="changePwdMsg" style="margin-top:8px; font-size:0.8rem; color:red;"></div>
             </div>
+            <button id="backToProfileBtn" class="btn small" style="margin-top:12px; background:#ccc;">返回</button>
+            <button id="profileLogoutBtn" class="btn secondary" style="margin-top:8px;">退出登录</button>
         `;
-        loadMerchantOrders();
-    } else if (role === 'courier') {
-        homeContent.innerHTML = `
-            <div class="stats-badge">🚚 待配送订单: <span id="deliveringCount">0</span></div>
-            <div class="card">
-                <h3>📬 配送任务</h3>
-                <div id="courierOrdersList" class="order-list"><div class="empty-tip">暂无配送任务</div></div>
+        // 绑定返回事件
+        const backBtn = document.getElementById('backToProfileBtn');
+        if (backBtn) {
+            backBtn.removeEventListener('click', () => renderProfilePanel(false));
+            backBtn.addEventListener('click', () => renderProfilePanel(false));
+        }
+        // 绑定修改密码事件
+        const changeBtn = document.getElementById('changePasswordBtn');
+        if (changeBtn) {
+            changeBtn.removeEventListener('click', handleChangePassword);
+            changeBtn.addEventListener('click', handleChangePassword);
+        }
+        // 绑定退出事件
+        const logoutBtn = document.getElementById('profileLogoutBtn');
+        if (logoutBtn) {
+            logoutBtn.removeEventListener('click', handleLogout);
+            logoutBtn.addEventListener('click', handleLogout);
+        }
+    } else {
+        // 显示概要信息 + 修改密码入口
+        profileContent.innerHTML = `
+            <div id="profileInfo">
+                <p><strong>手机号：</strong>${escapeHtml(currentUser.phone)}</p>
+                <p><strong>角色：</strong>${roleMap[currentUser.role] || currentUser.role}</p>
             </div>
+            <button id="goToChangePwdBtn" class="btn primary" style="margin-top:16px;">修改密码</button>
+            <button id="profileLogoutBtn" class="btn secondary" style="margin-top:12px;">退出登录</button>
         `;
-        loadCourierOrders();
+        // 绑定“修改密码”按钮事件
+        const goBtn = document.getElementById('goToChangePwdBtn');
+        if (goBtn) {
+            goBtn.removeEventListener('click', () => renderProfilePanel(true));
+            goBtn.addEventListener('click', () => renderProfilePanel(true));
+        }
+        // 绑定退出事件
+        const logoutBtn = document.getElementById('profileLogoutBtn');
+        if (logoutBtn) {
+            logoutBtn.removeEventListener('click', handleLogout);
+            logoutBtn.addEventListener('click', handleLogout);
+        }
     }
 }
 
-// 绑定首页内的事件（下单、登录等）
-function bindHomeEvents() {
-    // 登录按钮
-    const loginBtn = document.getElementById('doLoginBtn');
-    if (loginBtn) {
-        loginBtn.removeEventListener('click', handleLogin);
-        loginBtn.addEventListener('click', handleLogin);
-    }
-    // 下单按钮
-    const submitBtn = document.getElementById('submitOrderBtn');
-    if (submitBtn) {
-        submitBtn.removeEventListener('click', handleSubmitOrder);
-        submitBtn.addEventListener('click', handleSubmitOrder);
-    }
+// =====================================================
+// 事件处理函数
+// =====================================================
+function showAuthMessage(msg, color = 'red') {
+    const el = document.getElementById('authMessage');
+    if (!el) return;
+    el.innerText = msg;
+    el.style.color = color;
+    setTimeout(() => { if (el.innerText === msg) el.innerText = ''; }, 3000);
 }
 
-// 登录处理函数
+function showChangePwdMessage(msg, color = 'red') {
+    const el = document.getElementById('changePwdMsg');
+    if (!el) return;
+    el.innerText = msg;
+    el.style.color = color;
+    setTimeout(() => { if (el.innerText === msg) el.innerText = ''; }, 5000);
+}
+
+// 登录处理
 async function handleLogin() {
     const phone = document.getElementById('loginPhone').value.trim();
     const password = document.getElementById('loginPassword').value;
@@ -319,8 +456,17 @@ async function handleLogin() {
         // 未注册：弹窗选择身份
         const chosenRole = await showRoleModal();
         if (!chosenRole) return;
+        // 手动注册：密码由用户输入，且必须符合规则
+        if (!password) {
+            showAuthMessage('请设置密码（至少6位，包含数字、大小写字母中的至少两种）');
+            return;
+        }
+        if (!isPasswordComplex(password)) {
+            showAuthMessage('密码至少6位，必须包含数字、大小写字母中的至少两种');
+            return;
+        }
         if (chosenRole === 'customer') {
-            const user = await autoRegister(phone, 'customer');
+            const user = await autoRegister(phone, 'customer', password);
             if (!user) return;
             currentUser = user;
             localStorage.setItem('user', JSON.stringify(currentUser));
@@ -334,7 +480,7 @@ async function handleLogin() {
                 alert('邀请码错误，请重新选择身份');
                 return;
             }
-            const user = await autoRegister(phone, chosenRole);
+            const user = await autoRegister(phone, chosenRole, password);
             if (!user) return;
             currentUser = user;
             localStorage.setItem('user', JSON.stringify(currentUser));
@@ -344,6 +490,56 @@ async function handleLogin() {
             afterLogin();
         }
     }
+}
+
+// 密码复杂度校验（前端）
+function isPasswordComplex(pwd) {
+    if (pwd.length < 6) return false;
+    let hasDigit = /[0-9]/.test(pwd);
+    let hasUpper = /[A-Z]/.test(pwd);
+    let hasLower = /[a-z]/.test(pwd);
+    let count = (hasDigit ? 1 : 0) + (hasUpper ? 1 : 0) + (hasLower ? 1 : 0);
+    return count >= 2;
+}
+
+// 修改密码
+async function handleChangePassword() {
+    const newPwd = document.getElementById('newPasswordInput').value;
+    const confirmPwd = document.getElementById('confirmPasswordInput').value;
+    if (!newPwd || !confirmPwd) {
+        showChangePwdMessage('请完整填写新密码和确认密码');
+        return;
+    }
+    if (newPwd !== confirmPwd) {
+        showChangePwdMessage('两次输入的密码不一致');
+        return;
+    }
+    if (!isPasswordComplex(newPwd)) {
+        showChangePwdMessage('密码至少6位，必须包含数字、大小写字母中的至少两种');
+        return;
+    }
+    try {
+        const res = await axios.post('/api/change-password', { newPassword: newPwd });
+        if (res.data.success) {
+            alert(`恭喜！密码修改成功！\n新密码：${newPwd}`);
+            document.getElementById('newPasswordInput').value = '';
+            document.getElementById('confirmPasswordInput').value = '';
+            showChangePwdMessage('密码修改成功！', 'green');
+            // 修改成功后自动返回概要页
+            renderProfilePanel(false);
+        }
+    } catch (err) {
+        showChangePwdMessage(err.response?.data?.error || '修改失败');
+    }
+}
+
+// 退出登录
+async function handleLogout() {
+    await axios.post('/api/logout');
+    currentUser = null;
+    localStorage.removeItem('user');
+    afterLogin();
+    document.querySelector('#bottomNav .nav-item[data-tab="home"]')?.click();
 }
 
 // 下单处理
@@ -377,11 +573,13 @@ async function handleSubmitOrder() {
         const chosenRole = await showRoleModal();
         if (!chosenRole) return;
         if (chosenRole === 'customer') {
+            // 自动注册：密码为手机号后6位，后端不校验复杂度
             const user = await autoRegister(phone, 'customer');
             if (!user) return;
             currentUser = user;
             localStorage.setItem('user', JSON.stringify(currentUser));
             afterLogin();
+            alert(`注册成功！默认登录密码为手机号后六位：${phone.slice(-6)}，建议及时修改`);
         } else if (chosenRole === 'merchant' || chosenRole === 'courier') {
             const inviteCode = prompt('请输入邀请码');
             if (inviteCode !== '5075') {
@@ -393,7 +591,8 @@ async function handleSubmitOrder() {
             currentUser = user;
             localStorage.setItem('user', JSON.stringify(currentUser));
             afterLogin();
-            return; // 不提交订单
+            alert(`注册成功！默认登录密码为手机号后六位：${phone.slice(-6)}，建议及时修改`);
+            return;
         }
     } else {
         if (existingRole !== 'customer') {
@@ -428,10 +627,17 @@ async function handleSubmitOrder() {
         document.getElementById('custName').value = '';
         document.getElementById('custPhone').value = '';
         document.getElementById('custAddress').value = '';
-        document.querySelectorAll('.dish-checkbox').forEach(cb => {
-            cb.checked = false;
-            cb.dispatchEvent(new Event('change'));
+        // 重置所有菜品数量为0
+        document.querySelectorAll('.dish-item').forEach(item => {
+            const minusBtn = item.querySelector('.dish-minus');
+            const qtySpan = item.querySelector('.dish-qty-num');
+            const plusBtn = item.querySelector('.dish-plus');
+            if (qtySpan) qtySpan.textContent = '0';
+            if (minusBtn) minusBtn.style.display = 'none';
+            if (qtySpan) qtySpan.style.display = 'none';
+            if (plusBtn) plusBtn.textContent = '+';
         });
+        updateTotal();
         if (currentTab === 'orders') await loadCustomerOrders();
         alert('下单成功！');
     } catch (err) {
@@ -442,14 +648,6 @@ async function handleSubmitOrder() {
 // =====================================================
 // 通用辅助函数
 // =====================================================
-function showAuthMessage(msg, color = 'red') {
-    const el = document.getElementById('authMessage');
-    if (!el) return;
-    el.innerText = msg;
-    el.style.color = color;
-    setTimeout(() => { if (el.innerText === msg) el.innerText = ''; }, 3000);
-}
-
 function showRoleModal() {
     return new Promise((resolve) => {
         modal.style.display = 'flex';
@@ -473,10 +671,14 @@ function showRoleModal() {
     });
 }
 
+// 自动注册：如果不传密码，后端使用手机号后6位（不校验复杂度）
 async function autoRegister(phone, role, password = null) {
-    const finalPassword = password || phone.slice(-6);
     try {
-        const res = await axios.post('/api/register', { phone, password: finalPassword, role });
+        const payload = { phone, role };
+        if (password) {
+            payload.password = password;
+        }
+        const res = await axios.post('/api/register', payload);
         return res.data;
     } catch (err) {
         console.error(err);
@@ -495,7 +697,7 @@ function formatDate(dateStr) {
 }
 
 // =====================================================
-// 订单加载函数（用户、商家、快递员）
+// 订单加载函数
 // =====================================================
 async function loadCustomerOrders() {
     if (!currentUser || currentUser.role !== 'customer') return;
@@ -639,32 +841,29 @@ function renderBottomNav() {
             document.getElementById(panelId).style.display = 'block';
             currentTab = tab;
             if (tab === 'orders' && currentUser?.role === 'customer') loadCustomerOrders();
-            if (tab === 'dishes' && currentUser?.role === 'merchant') renderMerchantDishes();
-            if (tab === 'profile') updateProfilePanel();
+            if (tab === 'dishes' && currentUser?.role === 'merchant') {
+                renderMerchantDishes();
+                // 重新绑定按钮事件（以防动态添加后丢失）
+                bindMerchantEvents();
+            }
+            if (tab === 'profile') renderProfilePanel(false);
         });
     });
 }
 
-function updateProfilePanel() {
-    if (!currentUser) {
-        profilePhone.innerText = '未登录';
-        profileRole.innerText = '游客';
-        profileLogoutBtn.style.display = 'none';
-        return;
+// 绑定商家面板的事件（保存所有、添加）
+function bindMerchantEvents() {
+    const addBtn = document.getElementById('addDishBtn');
+    if (addBtn) {
+        addBtn.removeEventListener('click', addNewDishRow);
+        addBtn.addEventListener('click', addNewDishRow);
     }
-    profilePhone.innerText = currentUser.phone;
-    const roleMap = { customer: '普通用户', merchant: '商家', courier: '快递员' };
-    profileRole.innerText = roleMap[currentUser.role] || currentUser.role;
-    profileLogoutBtn.style.display = 'block';
+    const saveBtn = document.getElementById('saveAllDishesBtn');
+    if (saveBtn) {
+        saveBtn.removeEventListener('click', saveAllDishes);
+        saveBtn.addEventListener('click', saveAllDishes);
+    }
 }
-
-profileLogoutBtn.addEventListener('click', async () => {
-    await axios.post('/api/logout');
-    currentUser = null;
-    localStorage.removeItem('user');
-    afterLogin();
-    document.querySelector('#bottomNav .nav-item[data-tab="home"]')?.click();
-});
 
 // =====================================================
 // 登录成功后的统一处理
@@ -677,8 +876,9 @@ function afterLogin() {
     }
     if (currentUser?.role === 'merchant') {
         renderMerchantDishes();
+        bindMerchantEvents();
     }
-    updateProfilePanel();
+    renderProfilePanel(false);
     document.querySelector('#bottomNav .nav-item[data-tab="home"]')?.click();
 }
 
@@ -690,7 +890,7 @@ async function checkAutoLogin() {
     if (!stored) {
         renderHomeContent();
         renderBottomNav();
-        updateProfilePanel();
+        renderProfilePanel(false);
         return;
     }
     try {

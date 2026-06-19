@@ -1,4 +1,12 @@
-/* ===== 原有样式保留 ===== */
+/* ===== 全局色调改为淡绿色 ===== */
+:root {
+    --primary-color: #66BB6A;
+    --primary-light: #a5d6a7;
+    --primary-dark: #388e3c;
+    --primary-bg: #e8f5e9;
+    --yellow-btn: #FFD600;
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -35,7 +43,7 @@ header {
 h1 {
     font-size: 1.6rem;
     font-weight: 600;
-    color: #ff6b35;
+    color: var(--primary-color);
 }
 
 main {
@@ -60,13 +68,14 @@ main {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    border-left: 4px solid #ff6b35;
+    border-left: 4px solid var(--primary-color);
     padding-left: 0.75rem;
 }
 
 .order-form input, 
 .order-form textarea,
-#loginForm input {
+#loginForm input,
+#changePasswordArea input {
     width: 100%;
     padding: 0.8rem 1rem;
     margin-bottom: 1rem;
@@ -81,9 +90,10 @@ main {
 
 .order-form input:focus, 
 .order-form textarea:focus,
-#loginForm input:focus {
+#loginForm input:focus,
+#changePasswordArea input:focus {
     outline: none;
-    border-color: #ff6b35;
+    border-color: var(--primary-color);
     background: white;
 }
 
@@ -101,11 +111,11 @@ main {
 }
 
 .btn.primary {
-    background: #ff6b35;
+    background: var(--primary-color);
     color: white;
-    box-shadow: 0 2px 8px rgba(255,107,53,0.3);
+    box-shadow: 0 2px 8px rgba(102, 187, 106, 0.3);
 }
-.btn.primary:active { transform: scale(0.97); background: #e55a2b; }
+.btn.primary:active { transform: scale(0.97); background: var(--primary-dark); }
 .btn.secondary { background: #2c3e66; color: white; }
 .btn.success { background: #27ae60; color: white; }
 .btn.warning { background: #f39c12; color: white; }
@@ -144,7 +154,7 @@ main {
     border-radius: 1.5rem;
     font-weight: 500;
 }
-.status-pending { background: #ffe8df; color: #ff6b35; }
+.status-pending { background: #ffe8df; color: #e67e22; }
 .status-accepted { background: #e3f2fd; color: #1976d2; }
 .status-dispatched { background: #fff3e0; color: #f39c12; }
 .status-delivered { background: #e8f5e9; color: #2e7d32; }
@@ -173,14 +183,14 @@ main {
     font-weight: 500;
     font-size: 0.85rem;
     box-shadow: 0 1px 4px rgba(0,0,0,0.05);
-    color: #ff6b35;
+    color: var(--primary-color);
 }
 
 .courier-address {
     background: #fff7e6;
     padding: 0.6rem 0.8rem;
     border-radius: 0.875rem;
-    border-left: 3px solid #ff6b35;
+    border-left: 3px solid var(--primary-color);
     margin: 0.5rem 0;
     font-size: 0.85rem;
 }
@@ -234,64 +244,31 @@ input, textarea, select { font-size: 16px !important; }
     cursor: pointer;
     transition: 0.2s;
 }
-.role-option:hover { background: #ffe8df; }
+.role-option:hover { background: var(--primary-bg); }
 .role-icon { font-size: 1.8rem; }
 .role-name { font-weight: 600; flex: 1; text-align: left; }
 .role-desc { font-size: 0.7rem; color: #888; }
 #closeModalBtn { background: #ccc; color: #333; }
 
-/* ===== 菜品多选样式（优化布局 + 自定义复选框 + 合计行） ===== */
+/* ===== 菜品项样式（仅加减按钮，无复选框） ===== */
 .dish-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
     background: #f9f9f9;
     border-radius: 12px;
-    padding: 10px 14px;
+    padding: 8px 14px;
     margin-bottom: 6px;
     transition: background 0.2s;
+    min-height: 56px;
 }
-.dish-checkbox-label {
+
+.dish-info {
     display: flex;
     align-items: center;
     gap: 10px;
     flex: 1;
-    cursor: pointer;
 }
-.dish-checkbox-label input[type="checkbox"] {
-    position: absolute;
-    opacity: 0;
-    width: 0;
-    height: 0;
-    pointer-events: none;
-}
-.custom-checkbox {
-    width: 22px;
-    height: 22px;
-    border: 2px solid #ccc;
-    border-radius: 6px;
-    background: white;
-    display: inline-block;
-    flex-shrink: 0;
-    transition: 0.2s;
-    position: relative;
-}
-.dish-checkbox-label input[type="checkbox"]:checked + .custom-checkbox {
-    background: #27ae60;
-    border-color: #27ae60;
-}
-.dish-checkbox-label input[type="checkbox"]:checked + .custom-checkbox::after {
-    content: "✓";
-    color: white;
-    font-size: 16px;
-    font-weight: bold;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 100%;
-}
-
 .dish-emoji {
     font-size: 1.3rem;
     flex-shrink: 0;
@@ -300,45 +277,57 @@ input, textarea, select { font-size: 16px !important; }
     font-weight: 500;
     flex: 1;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 .dish-price {
-    color: #ff6b35;
+    color: var(--primary-color);
     font-size: 0.9rem;
     font-weight: 600;
     flex-shrink: 0;
+    margin-right: 8px;
 }
 
-.dish-quantity {
+.dish-control {
     display: flex;
     align-items: center;
     gap: 6px;
     flex-shrink: 0;
-    margin-left: 10px;
 }
-.dish-quantity span {
-    font-size: 0.8rem;
-    color: #666;
+
+/* 加减按钮：正圆形，黄色背景，黑色符号 */
+.dish-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;          /* 保证正圆 */
+    border: none;
+    background: var(--yellow-btn);
+    color: #000;
+    font-size: 1.4rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: 0.2s;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    flex-shrink: 0;              /* 防止变形 */
+    aspect-ratio: 1 / 1;         /* 额外保证宽高比 */
 }
-.dish-quantity input {
-    width: 50px;
-    padding: 4px 6px;
-    border: 1px solid #ddd;
-    border-radius: 8px;
+.dish-btn:active {
+    transform: scale(0.90);
+    opacity: 0.7;
+}
+
+.dish-qty-num {
+    min-width: 24px;
     text-align: center;
-    font-size: 0.9rem;
-    background: white;
-}
-.dish-quantity input:disabled {
-    background: #f0f0f0;
-    color: #aaa;
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: #333;
 }
 
-/* 选中时整行背景轻微变色 */
-.dish-item:has(input[type="checkbox"]:checked) {
-    background: #e8f5e9;
-}
-
-/* 合计行样式（右对齐，橙色，与淡绿色区分） */
+/* 合计行样式 */
 .dish-total {
     text-align: right;
     font-weight: 600;
@@ -352,10 +341,11 @@ input, textarea, select { font-size: 16px !important; }
 /* 响应式调整 */
 @media (max-width: 400px) {
     .dish-item {
+        padding: 6px 10px;
         flex-wrap: wrap;
         gap: 6px;
     }
-    .dish-checkbox-label {
+    .dish-info {
         flex-wrap: wrap;
         gap: 6px;
     }
@@ -363,8 +353,14 @@ input, textarea, select { font-size: 16px !important; }
         white-space: normal;
         min-width: 60px;
     }
-    .dish-quantity {
-        margin-left: 0;
+    .dish-control {
+        margin-left: auto;
+    }
+    .dish-btn {
+        width: 30px;
+        height: 30px;
+        font-size: 1.2rem;
+        aspect-ratio: 1 / 1;     /* 小屏幕也保持正圆 */
     }
 }
 
@@ -431,18 +427,26 @@ input, textarea, select { font-size: 16px !important; }
     transition: 0.2s;
 }
 .nav-item.active {
-    color: #ff6b35;
+    color: var(--primary-color);
     font-weight: 600;
 }
 .nav-item:active {
     opacity: 0.6;
 }
 
-/* 适配手机小屏幕 */
+/* 响应式 */
 @media (max-width: 400px) {
     .nav-item { font-size: 0.75rem; padding: 6px 8px; }
     main { padding-bottom: 70px; }
 }
 @media (orientation: landscape) {
     .nav-item { flex-direction: row; gap: 6px; }
+}
+
+/* 修改密码区域样式 */
+#changePasswordArea h4 {
+    margin-bottom: 8px;
+}
+#changePasswordArea p {
+    margin-bottom: 12px;
 }
