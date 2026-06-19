@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>同城速配 - 订单管理系统</title>
+    <link rel="stylesheet" href="/style.css">
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🏍️ 同城速配</h1>
+            <div class="role-tabs">
+                <button class="role-btn active" data-role="customer">👤 用户</button>
+                <button class="role-btn" data-role="merchant">🏪 商家</button>
+                <button class="role-btn" data-role="courier">📦 快递员</button>
+            </div>
+        </header>
+
+        <!-- 用户面板 -->
+        <div id="customerPanel" class="panel active">
+            <div class="card order-form">
+                <h3>📝 新订单</h3>
+                <input type="text" id="custName" placeholder="收货人姓名" autocomplete="off">
+                <input type="tel" id="custPhone" placeholder="联系电话" autocomplete="off">
+                <textarea id="custAddress" rows="2" placeholder="详细地址" autocomplete="off"></textarea>
+                <input type="text" id="itemDesc" placeholder="商品描述 (例：牛肉面套餐)" autocomplete="off">
+                <button id="submitOrderBtn" class="btn primary">✅ 立即下单</button>
+            </div>
+            <div class="card">
+                <h3>📋 我的订单</h3>
+                <div id="customerOrdersList" class="order-list">
+                    <div class="empty-tip">暂无订单，快去下一单吧~</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 商家面板 -->
+        <div id="merchantPanel" class="panel">
+            <div class="stats-badge">
+                📊 未派送订单: <span id="undispatchedCount">0</span>
+            </div>
+            <div class="card">
+                <h3>🏪 所有订单</h3>
+                <div id="merchantOrdersList" class="order-list">
+                    <div class="empty-tip">暂无订单</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 快递员面板 -->
+        <div id="courierPanel" class="panel">
+            <div class="stats-badge">
+                🚚 待配送订单: <span id="deliveringCount">0</span>
+            </div>
+            <div class="card">
+                <h3>📬 配送任务</h3>
+                <div id="courierOrdersList" class="order-list">
+                    <div class="empty-tip">暂无配送任务</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/app.js"></script>
+</body>
+</html>
