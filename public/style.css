@@ -1,20 +1,18 @@
-/* public/style.css - 移动端优化版 */
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    -webkit-tap-highlight-color: transparent; /* 移除移动端点击灰色背景 */
+    -webkit-tap-highlight-color: transparent;
 }
 
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     background: #f5f5f5;
     color: #333;
-    font-size: 16px; /* 基准字体，便于使用rem */
+    font-size: 16px;
     line-height: 1.4;
 }
 
-/* 容器 - 全宽，最大宽度限制，居中 */
 .container {
     max-width: 600px;
     margin: 0 auto;
@@ -24,7 +22,6 @@ body {
     padding: 0;
 }
 
-/* 头部 */
 header {
     background: white;
     padding: 1rem 1.2rem;
@@ -41,8 +38,7 @@ h1 {
     color: #ff6b35;
 }
 
-/* 角色切换/用户信息栏 */
-.role-tabs, .user-info-bar {
+.role-tabs {
     display: flex;
     gap: 0.75rem;
     background: #f0f0f0;
@@ -69,7 +65,6 @@ h1 {
     box-shadow: 0 2px 6px rgba(255,107,53,0.3);
 }
 
-/* 面板切换 */
 .panel {
     display: none;
     padding: 1rem;
@@ -85,7 +80,6 @@ h1 {
     to { opacity: 1; transform: translateY(0);}
 }
 
-/* 卡片 */
 .card {
     background: white;
     border-radius: 1.25rem;
@@ -104,7 +98,6 @@ h1 {
     padding-left: 0.75rem;
 }
 
-/* 表单元素 - 移动端友好 */
 .order-form input, 
 .order-form textarea,
 #loginForm input,
@@ -119,7 +112,7 @@ h1 {
     background: #fafafa;
     font-family: inherit;
     transition: 0.2s;
-    -webkit-appearance: none; /* 移除iOS默认样式 */
+    -webkit-appearance: none;
 }
 
 .order-form input:focus, 
@@ -131,7 +124,6 @@ h1 {
     background: white;
 }
 
-/* 按钮 - 触摸区域足够大 */
 .btn {
     border: none;
     padding: 0.8rem 1.2rem;
@@ -177,7 +169,6 @@ h1 {
     width: auto;
 }
 
-/* 订单列表 */
 .order-list {
     display: flex;
     flex-direction: column;
@@ -247,7 +238,6 @@ h1 {
     flex-wrap: wrap;
 }
 
-/* 统计徽章 */
 .stats-badge {
     background: white;
     border-radius: 2rem;
@@ -260,7 +250,6 @@ h1 {
     color: #ff6b35;
 }
 
-/* 快递员地址卡片 */
 .courier-address {
     background: #fff7e6;
     padding: 0.6rem 0.8rem;
@@ -270,7 +259,6 @@ h1 {
     font-size: 0.85rem;
 }
 
-/* 空状态提示 */
 .empty-tip {
     text-align: center;
     color: #aaa;
@@ -278,7 +266,6 @@ h1 {
     font-size: 0.9rem;
 }
 
-/* 登录/注册切换标签 */
 .tabs {
     display: flex;
     gap: 0.75rem;
@@ -294,53 +281,32 @@ h1 {
     color: white;
 }
 
-/* 保持按钮最小触摸尺寸 */
 button, .btn, [role="button"] {
     min-height: 44px;
 }
 
-/* 针对极小屏幕（iPhone SE等）优化 */
 @media (max-width: 400px) {
-    body {
-        font-size: 14px;
-    }
-    .card {
-        padding: 1rem;
-    }
-    .order-item {
-        padding: 0.8rem;
-    }
-    .btn.small {
-        padding: 0.4rem 0.8rem;
-        font-size: 0.75rem;
-    }
-    h1 {
-        font-size: 1.4rem;
-    }
+    body { font-size: 14px; }
+    .card { padding: 1rem; }
+    .order-item { padding: 0.8rem; }
+    .btn.small { padding: 0.4rem 0.8rem; font-size: 0.75rem; }
+    h1 { font-size: 1.4rem; }
 }
 
-/* 横屏适配 */
 @media (orientation: landscape) {
-    .container {
-        max-width: 800px;
-    }
-    .order-actions {
-        flex-direction: row;
-    }
+    .container { max-width: 800px; }
+    .order-actions { flex-direction: row; }
 }
 
-/* 触摸反馈优化 */
 .btn:active, .role-btn:active {
     opacity: 0.7;
     transform: scale(0.98);
 }
 
-/* 避免输入框放大（iOS） */
 input, textarea, select {
     font-size: 16px !important;
 }
 
-/* 二维码扫码后页面跳转，确保背景填充 */
 html, body {
     height: 100%;
     width: 100%;
@@ -388,6 +354,41 @@ html, body {
     border: 1px solid #ddd;
     border-radius: 8px;
     text-align: center;
+}
+
+/* 菜品管理样式 */
+.dish-manage-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.dish-manage-item {
+    background: #f9f9f9;
+    border-radius: 12px;
+    padding: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+}
+.dish-manage-fields {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    flex: 2;
+}
+.dish-manage-fields input {
+    padding: 6px 10px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 0.9rem;
+}
+.dish-name-input { width: 120px; }
+.dish-price-input { width: 70px; }
+.dish-emoji-input { width: 60px; }
+.dish-manage-actions {
+    display: flex;
+    gap: 8px;
 }
 
 /* 模态框样式 */
