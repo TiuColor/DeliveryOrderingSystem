@@ -21,6 +21,7 @@ app.use(session({
 const db = new sqlite3.Database('./orders.db');
 
 db.serialize(() => {
+  // 订单表
   db.run(`
     CREATE TABLE IF NOT EXISTS orders (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -35,6 +36,7 @@ db.serialize(() => {
     )
   `);
   
+  // 用户表
   db.run(`
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -44,7 +46,18 @@ db.serialize(() => {
     )
   `);
   
-  // 预置商家和快递员演示账号（手机号作为账号）
+  // 菜品表
+  db.run(`
+    CREATE TABLE IF NOT EXISTS dishes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      emoji TEXT,
+      price INTEGER DEFAULT 0,
+      sort_order INTEGER DEFAULT 0
+    )
+  `);
+
+  // 预置演示账号
   const demoUsers = [
     { phone: '13800000001', password: '123456', role: 'merchant' },
     { phone: '13800000002', password: '123456', role: 'courier' }
@@ -57,8 +70,24 @@ db.serialize(() => {
       }
     });
   });
+
+  // 初始化默认菜品（如果表为空）
+  db.get(`SELECT COUNT(*) as count FROM dishes`, (err, row) => {
+    if (row.count === 0) {
+      const defaultDishes = [
+        { emoji: '🍛', name: '咖喱鸡肉饭', price: 28 },
+        { emoji: '🍜', name: '牛肉拉面', price: 22 },
+        { emoji: '🥗', name: '蔬菜沙拉', price: 18 }
+      ];
+      defaultDishes.forEach((dish, idx) => {
+        db.run(`INSERT INTO dishes (emoji, name, price, sort_order) VALUES (?, ?, ?, ?)`, 
+          [dish.emoji, dish.name, dish.price, idx]);
+      });
+    }
+  });
 });
 
+// 辅助中间件
 function requireLogin(req, res, next) {
   if (!req.session.user) return res.status(401).json({ error: '请先登录' });
   next();
@@ -72,7 +101,7 @@ function requireRole(role) {
 
 const broadcastOrderUpdate = () => io.emit('order-updated', { timestamp: Date.now() });
 
-// 检查手机号是否已注册
+// ========== 用户相关 API ==========
 app.post('/api/check-phone', (req, res) => {
   const { phone } = req.body;
   if (!phone) return res.status(400).json({ error: '手机号不能为空' });
@@ -82,7 +111,6 @@ app.post('/api/check-phone', (req, res) => {
   });
 });
 
-// 注册（支持指定角色，默认 customer）
 app.post('/api/register', async (req, res) => {
   const { phone, password, role = 'customer' } = req.body;
   if (!phone || !password) return res.status(400).json({ error: '手机号和密码不能为空' });
@@ -104,7 +132,6 @@ app.post('/api/register', async (req, res) => {
   }
 });
 
-// 登录
 app.post('/api/login', (req, res) => {
   const { phone, password } = req.body;
   db.get(`SELECT * FROM users WHERE phone = ?`, [phone], async (err, user) => {
@@ -127,7 +154,45 @@ app.get('/api/me', (req, res) => {
   res.json(req.session.user);
 });
 
-// 获取订单（根据角色）
+// ========== 菜品管理 API（公开获取，商家管理）==========
+app.get('/api/dishes', (req, res) => {
+  db.all(`SELECT * FROM dishes ORDER BY sort_order`, (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(rows);
+  });
+});
+
+app.post('/api/dishes', requireLogin, requireRole('merchant'), (req, res) => {
+  const { name, price, emoji } = req.body;
+  if (!name || price === undefined) return res.status(400).json({ error: '名称和价格不能为空' });
+  db.run(`INSERT INTO dishes (name, price, emoji) VALUES (?, ?, ?)`, [name, price, emoji || ''], function(err) {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ id: this.lastID });
+  });
+});
+
+app.put('/api/dishes/:id', requireLogin, requireRole('merchant'), (req, res) => {
+  const { id } = req.params;
+  const { name, price, emoji } = req.body;
+  if (!name || price === undefined) return res.status(400).json({ error: '名称和价格不能为空' });
+  db.run(`UPDATE dishes SET name = ?, price = ?, emoji = ? WHERE id = ?`, 
+    [name, price, emoji || '', id], function(err) {
+      if (err) return res.status(500).json({ error: err.message });
+      if (this.changes === 0) return res.status(404).json({ error: '菜品不存在' });
+      res.json({ success: true });
+    });
+});
+
+app.delete('/api/dishes/:id', requireLogin, requireRole('merchant'), (req, res) => {
+  const { id } = req.params;
+  db.run(`DELETE FROM dishes WHERE id = ?`, [id], function(err) {
+    if (err) return res.status(500).json({ error: err.message });
+    if (this.changes === 0) return res.status(404).json({ error: '菜品不存在' });
+    res.json({ success: true });
+  });
+});
+
+// ========== 订单 API ==========
 app.get('/api/orders', requireLogin, (req, res) => {
   const user = req.session.user;
   if (user.role === 'customer') {
@@ -150,7 +215,6 @@ app.get('/api/orders', requireLogin, (req, res) => {
   }
 });
 
-// 创建订单（仅 customer）
 app.post('/api/orders', requireLogin, requireRole('customer'), (req, res) => {
   const { customerName, address, phone, itemDesc } = req.body;
   const userId = req.session.user.id;
@@ -168,7 +232,6 @@ app.post('/api/orders', requireLogin, requireRole('customer'), (req, res) => {
   );
 });
 
-// 商家接单
 app.post('/api/orders/:id/accept', requireLogin, requireRole('merchant'), (req, res) => {
   const { id } = req.params;
   db.run(`UPDATE orders SET status = 'accepted' WHERE id = ? AND status = 'pending'`, [id], function(err) {
@@ -179,7 +242,6 @@ app.post('/api/orders/:id/accept', requireLogin, requireRole('merchant'), (req, 
   });
 });
 
-// 商家推送
 app.post('/api/orders/:id/dispatch', requireLogin, requireRole('merchant'), (req, res) => {
   const { id } = req.params;
   db.run(`UPDATE orders SET status = 'dispatched' WHERE id = ? AND status = 'accepted'`, [id], function(err) {
@@ -190,7 +252,6 @@ app.post('/api/orders/:id/dispatch', requireLogin, requireRole('merchant'), (req
   });
 });
 
-// 快递员完成
 app.post('/api/orders/:id/complete', requireLogin, requireRole('courier'), (req, res) => {
   const { id } = req.params;
   db.run(`UPDATE orders SET status = 'delivered' WHERE id = ? AND status = 'dispatched'`, [id], function(err) {
